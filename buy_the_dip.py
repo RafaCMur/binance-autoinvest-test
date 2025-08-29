@@ -121,7 +121,8 @@ dip_order = client.new_order(
 print(f"DIP order placed with ID {dip_order['orderId']}")
 print("-------------------------------------")
 
-# Final state
+
+# --- Final state ---
 usdt_after = get_balance("USDT")
 btc_after = get_balance("BTC")
 
@@ -149,3 +150,24 @@ log_trade(
     btc_after=btc_after
 )
 print("Trade logged to history.csv")
+
+
+# --- Telegram notification ---
+from telegram_notify import send_telegram
+
+summary = (
+    "Buy-the-dip executed\n\n"
+    f"Symbol: {SYMBOL}\n"
+    f"Baseline: {BASELINE_AMOUNT} quote\n"
+    f"Dip target: {dip_price}\n"
+    f"BTC bought: {btc_bought}\n"
+    f"USDT: {usdt_before} -> {usdt_after}\n"
+    f"BTC:  {btc_before} -> {btc_after}\n"
+)
+
+try:
+    sent = send_telegram(summary, parse_mode=None)
+    print(f"Telegram sent: {sent}")
+except Exception as e:
+    # Do not let notifications break the investment flow
+    print(f"Telegram error (ignored): {e}")
