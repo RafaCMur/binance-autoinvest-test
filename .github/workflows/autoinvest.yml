@@ -27,6 +27,8 @@ jobs:
         env:
           BINANCE_API_KEY_TEST: ${{ secrets.BINANCE_API_KEY_TEST }}
           BINANCE_API_SECRET_TEST: ${{ secrets.BINANCE_API_SECRET_TEST }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           USE_TESTNET: "true"
         run: python buy_the_dip.py
 
