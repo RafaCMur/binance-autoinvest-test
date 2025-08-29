@@ -1,0 +1,35 @@
+name: AutoInvest Testnet
+
+on:
+  schedule:
+    - cron: "0 9 * * *" # runs every day at 09:00 UTC
+  workflow_dispatch: # allow manual trigger from GitHub UI
+
+jobs:
+  run-autoinvest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run buy_the_dip.py
+        env:
+          BINANCE_API_KEY_TEST: ${{ secrets.BINANCE_API_KEY_TEST }}
+          BINANCE_API_SECRET_TEST: ${{ secrets.BINANCE_API_SECRET_TEST }}
+          USE_TESTNET: "true"
+        run: python buy_the_dip.py
+
+      - name: Upload history.csv artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: history
+          path: history.csv
