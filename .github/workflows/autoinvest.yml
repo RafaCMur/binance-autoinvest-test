@@ -2,7 +2,7 @@ name: AutoInvest Testnet
 
 on:
   schedule:
-    - cron: "0 9 * * *" # diario 09:00 UTC
+    - cron: "0 9 * * *" # run daily at 09:00 UTC
   workflow_dispatch:
 
 jobs:
@@ -10,8 +10,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # needed for pushing commits
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -28,9 +30,16 @@ jobs:
           USE_TESTNET: "true"
         run: python buy_the_dip.py
 
-      - name: Upload history.csv
-        uses: actions/upload-artifact@v4
-        with:
-          name: history
-          path: history.csv
-          if-no-files-found: warn
+      - name: Commit history.csv to data-history branch
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+
+          git checkout data-history || git checkout --orphan data-history
+          git reset
+
+          cp history.csv history-$(date +%Y%m%dT%H%M%S).csv
+          git add history.csv history-*.csv
+
+          git commit -m "Update history $(date -u +'%Y-%m-%d %H:%M:%S UTC')" || echo "Nothing to commit"
+          git push origin data-history
