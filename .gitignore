@@ -17,6 +17,7 @@ build/
 # --- Logs y outputs ---
 *.log
 *.csv
+!history*.csv
 *.json
 data/
 logs/
