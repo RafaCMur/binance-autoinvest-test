@@ -35,25 +35,22 @@ jobs:
           USE_TESTNET: "true"
         run: python buy_the_dip.py
 
-      - name: Commit history.csv to data-history branch
+      - name: Commit history to data-history branch
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
 
-          # Stash any untracked files that might conflict
-          git add history.csv || true
-          git stash push -m "temp stash" || true
-
-          # Try to checkout existing branch, or create new orphan branch
+          # Switch to data-history branch or create it
           git fetch origin data-history:data-history || true
           git checkout data-history || git checkout --orphan data-history
 
-          # Restore the history file and create timestamped copy
-          git stash pop || true
-          cp history.csv history-$(date +%Y%m%dT%H%M%S).csv || true
-          
-          git add history.csv history-*.csv
+          # If all_history.csv exists, append new data, otherwise create it
+          if [ -f all_history.csv ]; then
+            tail -n +2 history.csv >> all_history.csv
+          else
+            cp history.csv all_history.csv
+          fi
+
+          git add all_history.csv
           git commit -m "Update history $(date -u +'%Y-%m-%d %H:%M:%S UTC')" || echo "Nothing to commit"
-          
-          # Force push to handle any conflicts
-          git push origin data-history --force-with-lease
+          git push origin data-history
