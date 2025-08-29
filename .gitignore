@@ -1,0 +1,40 @@
+# --- Archivos sensibles ---
+.env
+*.key
+*.secret
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# --- Logs y outputs ---
+*.log
+*.csv
+*.json
+data/
+logs/
+
+# --- Entornos ---
+.venv/
+venv/
+ENV/
+env/
+.ipynb_checkpoints/
+.python-version
+
+# --- IDEs ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- Sistema ---
+.DS_Store
+Thumbs.db
