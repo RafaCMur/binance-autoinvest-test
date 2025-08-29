@@ -1,0 +1,2 @@
+datetime_utc,action,symbol,base_amount_usdt,btc_qty,avg_price,fee,dip_price,dip_qty,usdt_before,usdt_after,btc_before,btc_after
+2025-08-29T22:50:39.884656+00:00,buy_the_dip,BTCUSDT,10.00,0.00009000,108208.07000000,0E-8,106043.90000000,0.00009000,9805.65102910,9795.91902310,1.00171000,1.00180000
