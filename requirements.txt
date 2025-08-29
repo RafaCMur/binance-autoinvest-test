@@ -1,3 +1,4 @@
 binance-connector
 pandas
 python-dateutil
+python-dotenv
