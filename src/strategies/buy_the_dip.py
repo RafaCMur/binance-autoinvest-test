@@ -195,7 +195,7 @@ print("Trade logged to history.csv")
 
 
 # --- Telegram notification ---
-from telegram_notify import send_telegram
+from src.utils.telegram import send_telegram
 
 summary = (
     f"Bitcoin Buy Order Executed {'(TESTNET)' if USE_TESTNET else '(MAINNET)'}\n\n"
