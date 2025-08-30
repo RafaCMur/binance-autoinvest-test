@@ -1,8 +1,8 @@
 name: Check Order Executions
 
 on:
-  schedule:
-    - cron: "0 */6 * * *" # check order executions every 6 hours (4 times daily)
+  # schedule:
+  #   - cron: "0 */6 * * *" # check order executions every 6 hours (4 times daily)
   workflow_dispatch:
 
 jobs:

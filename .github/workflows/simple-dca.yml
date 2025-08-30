@@ -1,0 +1,57 @@
+name: Simple DCA Test
+
+on:
+  schedule:
+    - cron: "0 9 * * 1" # run every Monday at 09:00 UTC
+  workflow_dispatch:
+
+jobs:
+  simple-dca:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: simple-dca
+      cancel-in-progress: true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run simple DCA test
+        env:
+          BINANCE_API_KEY: ${{ secrets.BINANCE_API_KEY }}
+          BINANCE_API_SECRET: ${{ secrets.BINANCE_API_SECRET }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          USE_TESTNET: "false"
+        run: python buy_min_test.py
+
+      - name: Commit history to data-history branch
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+
+          git fetch origin data-history:data-history || true
+          git checkout data-history || git checkout --orphan data-history
+
+          if [ -f all_history.csv ]; then
+            tail -n +2 history.csv >> all_history.csv
+          else
+            cp history.csv all_history.csv
+          fi
+
+          git add all_history.csv
+          git commit -m "Update history $(date -u +'%Y-%m-%d %H:%M:%S UTC')" || echo "Nothing to commit"
+          git push origin data-history

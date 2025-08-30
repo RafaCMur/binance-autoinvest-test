@@ -1,8 +1,8 @@
-name: Buy BTC EUR
+name: Buy BTC EUR (Buy The Dip)
 
 on:
-  schedule:
-    - cron: "0 9 1,15 * *" # run twice monthly: 1st and 15th at 09:00 UTC
+  # schedule:
+  #   - cron: "0 9 1,15 * *" # run twice monthly: 1st and 15th at 09:00 UTC
   workflow_dispatch:
 
 jobs:
