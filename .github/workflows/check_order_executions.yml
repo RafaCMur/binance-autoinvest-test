@@ -32,5 +32,5 @@ jobs:
           BINANCE_API_SECRET: ${{ secrets.BINANCE_API_SECRET }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          USE_TESTNET: "true"
+          USE_TESTNET: ${{ secrets.USE_TESTNET }}
         run: python src/monitoring/check_orders.py
