@@ -60,14 +60,18 @@ def check_and_notify_executions():
             
             # Send Telegram notification
             message = (
-                f"🎯 DIP ORDER EXECUTED! {'(TESTNET)' if USE_TESTNET else '(MAINNET)'}\n\n"
-                f"Symbol: {SYMBOL}\n"
+                f"DIP ORDER EXECUTED! {'(TESTNET)' if USE_TESTNET else '(MAINNET)'}\n\n"
+                f"Trading Pair: {SYMBOL}\n"
+                f"Order Type: Limit Order Fill\n"
                 f"Quantity: {qty} BTC\n"
-                f"Price: {price} {BASE_CURRENCY}\n"
-                f"Total: {total_cost:.2f} {BASE_CURRENCY}\n"
-                f"Fee: {fee} BTC\n"
-                f"Time: {trade_time.strftime('%Y-%m-%d %H:%M:%S')} UTC\n\n"
-                f"Your buy-the-dip strategy caught a dip! 📈"
+                f"Execution Price: {price} {BASE_CURRENCY}\n"
+                f"Total Cost: {total_cost:.2f} {BASE_CURRENCY}\n"
+                f"Trading Fee: {fee} BTC\n"
+                f"Order ID: {trade['orderId']}\n"
+                f"Trade ID: {trade['id']}\n"
+                f"Execution Time: {trade_time.strftime('%d/%m/%Y %H:%M:%S')} UTC\n\n"
+                f"Your buy-the-dip limit order was filled successfully!\n"
+                f"Market dipped to your target price and triggered the purchase."
             )
             
             try:
@@ -80,7 +84,7 @@ def check_and_notify_executions():
         print(f"Error checking executions: {e}")
         # Send error notification
         try:
-            error_msg = f"⚠️ Error checking order executions: {str(e)}"
+            error_msg = f"Error checking order executions: {str(e)}"
             send_telegram(error_msg, parse_mode=None)
         except:
             pass

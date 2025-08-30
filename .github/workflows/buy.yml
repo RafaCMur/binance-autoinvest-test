@@ -1,31 +1,24 @@
-name: AutoInvest Testnet
+name: Buy BTC EUR
 
 on:
   schedule:
-    - cron: "0 9 * * *" # run daily at 09:00 UTC
-    - cron: "0 */2 * * *" # check order executions every 2 hours
+    - cron: "0 9 1,15 * *" # run twice monthly: 1st and 15th at 09:00 UTC
   workflow_dispatch:
-    inputs:
-      action:
-        description: 'Action to perform'
-        required: false
-        default: 'buy_and_check'
-        type: choice
-        options:
-        - buy_and_check
-        - check_only
 
 jobs:
-  run-autoinvest:
+  buy-btc:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    concurrency:
+      group: buy-btc
+      cancel-in-progress: true
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # needed for pushing commits
+          fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
@@ -37,23 +30,18 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run buy_the_dip.py
-        if: github.event.schedule == '0 9 * * *' || github.event.inputs.action == 'buy_and_check' || github.event.inputs.action == ''
         env:
           BINANCE_API_KEY: ${{ secrets.BINANCE_API_KEY }}
           BINANCE_API_SECRET: ${{ secrets.BINANCE_API_SECRET }}
-          BINANCE_API_KEY_TEST: ${{ secrets.BINANCE_API_KEY_TEST }}
-          BINANCE_API_SECRET_TEST: ${{ secrets.BINANCE_API_SECRET_TEST }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           USE_TESTNET: "false"
         run: python buy_the_dip.py
 
-      - name: Check order executions
+      - name: Check order executions after buy
         env:
           BINANCE_API_KEY: ${{ secrets.BINANCE_API_KEY }}
           BINANCE_API_SECRET: ${{ secrets.BINANCE_API_SECRET }}
-          BINANCE_API_KEY_TEST: ${{ secrets.BINANCE_API_KEY_TEST }}
-          BINANCE_API_SECRET_TEST: ${{ secrets.BINANCE_API_SECRET_TEST }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           USE_TESTNET: "false"
@@ -64,11 +52,9 @@ jobs:
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
 
-          # Switch to data-history branch or create it
           git fetch origin data-history:data-history || true
           git checkout data-history || git checkout --orphan data-history
 
-          # If all_history.csv exists, append new data, otherwise create it
           if [ -f all_history.csv ]; then
             tail -n +2 history.csv >> all_history.csv
           else

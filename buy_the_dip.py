@@ -25,7 +25,8 @@ client = Spot(api_key=API_KEY, api_secret=API_SECRET, base_url=BASE_URL)
 SYMBOL = "BTCEUR" if not USE_TESTNET else "BTCUSDT"
 BASE_CURRENCY = "EUR" if not USE_TESTNET else "USDT"
 BASELINE_AMOUNT = Decimal("10.00")  # baseline buy amount in base currency
-DIP_PERCENT = Decimal("0.02")       # -2% dip level
+MIN_DIP_PERCENT = Decimal("0.02")   # minimum -2% dip level
+MAX_DIP_PERCENT = Decimal("0.08")   # maximum -8% dip level
 MAX_DAILY_SPEND = Decimal("50.00")  # safety limit for real money
 
 # ===== Utils =====
@@ -57,6 +58,29 @@ def floor_step(value: Decimal, step: Decimal) -> Decimal:
     """Round down value to the nearest valid step"""
     return (value // step) * step
 
+def calculate_dynamic_dip_percent() -> Decimal:
+    """Calculate dip percentage based on recent volatility"""
+    try:
+        # Get 24h price change percentage
+        ticker = client.ticker_24hr(symbol=SYMBOL)
+        price_change_percent = abs(Decimal(ticker['priceChangePercent']))
+        
+        # Scale dip percentage based on volatility
+        # Low volatility (0-2%): use minimum dip (2%)
+        # High volatility (8%+): use maximum dip (8%)
+        if price_change_percent <= Decimal("2"):
+            return MIN_DIP_PERCENT
+        elif price_change_percent >= Decimal("8"):
+            return MAX_DIP_PERCENT
+        else:
+            # Linear scaling between min and max
+            volatility_ratio = (price_change_percent - Decimal("2")) / Decimal("6")
+            dip_range = MAX_DIP_PERCENT - MIN_DIP_PERCENT
+            return MIN_DIP_PERCENT + (volatility_ratio * dip_range)
+    except Exception as e:
+        print(f"Error calculating dynamic dip: {e}, using minimum dip")
+        return MIN_DIP_PERCENT
+
 # ===== Script =====
 print("\n========== START EXECUTION ==========")
 print("Datetime (UTC):", datetime.now(timezone.utc).isoformat())
@@ -78,9 +102,11 @@ print("-------------------------------------")
 # Cancel old limit orders
 cancel_old_orders()
 
-# Current price
+# Current price and dynamic dip calculation
 price_now = Decimal(client.ticker_price(SYMBOL)["price"])
-print(f"Current {SYMBOL} price: {price_now} {BASE_CURRENCY}\n")
+dip_percent = calculate_dynamic_dip_percent()
+print(f"Current {SYMBOL} price: {price_now} {BASE_CURRENCY}")
+print(f"24h volatility-based dip percentage: {(dip_percent*100):.1f}%\n")
 
 # 1) Baseline market buy
 print(f"Executing BASELINE market buy of {BASELINE_AMOUNT} {BASE_CURRENCY}...")
@@ -110,18 +136,19 @@ if btc_bought > 0:
         print(f"   Total commission: {commission} BTC")
 print("-------------------------------------")
 
-# 2) Place limit order (dip)
+# Get trading filters
 filters = get_filters(SYMBOL)
 
-dip_price = (price_now * (Decimal(1) - DIP_PERCENT))
-dip_price = floor_step(dip_price, filters["tickSize"])  # adjust to tick size
-
+# 2) Place limit order for the dip
+print(f"Placing LIMIT order for the dip...")
+dip_price = (price_now * (Decimal(1) - dip_percent))
+dip_price = floor_step(dip_price, filters["tickSize"])
 dip_qty = (BASELINE_AMOUNT / dip_price)
 dip_qty = floor_step(dip_qty, filters["stepSize"])  # adjust to step size
 
 print("Placing DIP order:")
 print(f"   Amount {BASE_CURRENCY} : {BASELINE_AMOUNT}")
-print(f"   Target price: {dip_price} {BASE_CURRENCY} ({(DIP_PERCENT*100):.2f}% below current)")
+print(f"   Target price: {dip_price} {BASE_CURRENCY} ({(dip_percent*100):.2f}% below current)")
 print(f"   Quantity BTC: {dip_qty}")
 
 dip_order = client.new_order(
@@ -171,13 +198,18 @@ print("Trade logged to history.csv")
 from telegram_notify import send_telegram
 
 summary = (
-    f"Buy-the-dip executed {'(TESTNET)' if USE_TESTNET else '(MAINNET)'}\n\n"
-    f"Symbol: {SYMBOL}\n"
-    f"Baseline: {BASELINE_AMOUNT} {BASE_CURRENCY}\n"
-    f"Dip target: {dip_price}\n"
-    f"BTC bought: {btc_bought}\n"
-    f"{BASE_CURRENCY}: {base_before} -> {base_after}\n"
-    f"BTC:  {btc_before} -> {btc_after}\n"
+    f"Bitcoin Buy Order Executed {'(TESTNET)' if USE_TESTNET else '(MAINNET)'}\n\n"
+    f"Trading Pair: {SYMBOL}\n"
+    f"Market Buy: {BASELINE_AMOUNT} {BASE_CURRENCY}\n"
+    f"Bitcoin Purchased: {btc_bought}\n"
+    f"Average Price: {avg_price if btc_bought > 0 else 'N/A'} {BASE_CURRENCY}\n"
+    f"Trading Fee: {commission} BTC\n"
+    f"Limit Order Price: {dip_price} {BASE_CURRENCY} (-{(dip_percent*100):.1f}%)\n"
+    f"Limit Order Quantity: {dip_qty} BTC\n\n"
+    f"{BASE_CURRENCY} Balance: {base_before} -> {base_after} ({base_after - base_before:+.2f})\n"
+    f"BTC Balance: {btc_before} -> {btc_after} ({btc_after - btc_before:+.8f})\n\n"
+    f"Strategy: Market buy + limit order placed for next dip\n"
+    f"Executed: {datetime.now(timezone.utc).strftime('%d/%m/%Y %H:%M:%S')} UTC"
 )
 
 try:

@@ -1,0 +1,36 @@
+name: Check Order Executions
+
+on:
+  schedule:
+    - cron: "0 */6 * * *" # check order executions every 6 hours (4 times daily)
+  workflow_dispatch:
+
+jobs:
+  check-executions:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    concurrency:
+      group: check-executions
+      cancel-in-progress: true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Check order executions only
+        env:
+          BINANCE_API_KEY: ${{ secrets.BINANCE_API_KEY }}
+          BINANCE_API_SECRET: ${{ secrets.BINANCE_API_SECRET }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          USE_TESTNET: "false"
+        run: python check_order_execution.py
