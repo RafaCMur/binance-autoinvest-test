@@ -8,8 +8,7 @@ from datetime import datetime, timezone
 from src.utils.logger import log_trade
 from config.settings import (
     USE_TESTNET, BASE_URL, API_KEY, API_SECRET,
-    TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID,
-    TRADING_PAIR, BASE_CURRENCY, TARGET_CURRENCY, SIMPLE_DCA_AMOUNT
+    TRADING_PAIR, BASE_CURRENCY, SIMPLE_DCA_AMOUNT
 )
 
 getcontext().prec = 28
