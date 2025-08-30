@@ -1,28 +1,31 @@
-from binance.spot import Spot
-from dotenv import load_dotenv
-from decimal import Decimal
+import sys
 import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+from decimal import getcontext, Decimal
+from binance.spot import Spot
 from datetime import datetime, timezone
-from telegram_notify import send_telegram
+from src.utils.logger import log_trade
+from src.utils.telegram import send_telegram
+from config.settings import (
+    USE_TESTNET, BASE_URL, API_KEY, API_SECRET,
+    TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID,
+    TRADING_PAIR, BASE_CURRENCY, TARGET_CURRENCY
+)
 
-load_dotenv()
+getcontext().prec = 28
 
-USE_TESTNET = os.getenv("USE_TESTNET", "false").lower() == "true"
-BASE_URL = "https://testnet.binance.vision" if USE_TESTNET else None
-
-# Use mainnet keys by default, fallback to test keys if specified
-if USE_TESTNET:
-    API_KEY = os.getenv("BINANCE_API_KEY_TEST")
-    API_SECRET = os.getenv("BINANCE_API_SECRET_TEST")
-else:
-    API_KEY = os.getenv("BINANCE_API_KEY")
-    API_SECRET = os.getenv("BINANCE_API_SECRET")
+# Print clear environment indicator
+print(f"ENVIRONMENT: {'TESTNET (Safe Mode)' if USE_TESTNET else 'MAINNET (Real Money)'}")
+print(f"API URL: {BASE_URL if USE_TESTNET else 'https://api.binance.com'}")
+print(f"Trading Pair: {TRADING_PAIR}")
+print(f"Strategy: Check Orders")
+print("-" * 50)
 
 client = Spot(api_key=API_KEY, api_secret=API_SECRET, base_url=BASE_URL)
 
 # Config
-SYMBOL = "BTCEUR" if not USE_TESTNET else "BTCUSDT"
-BASE_CURRENCY = "EUR" if not USE_TESTNET else "USDT"
+SYMBOL = TRADING_PAIR
 
 def check_and_notify_executions():
     """Check for recently executed orders and send Telegram notifications"""
@@ -59,6 +62,8 @@ def check_and_notify_executions():
             print(f"Recent execution: {qty} BTC @ {price} {BASE_CURRENCY}")
             
             # Send Telegram notification
+            from src.utils.telegram import send_telegram
+            
             message = (
                 f"DIP ORDER EXECUTED! {'(TESTNET)' if USE_TESTNET else '(MAINNET)'}\n\n"
                 f"Trading Pair: {SYMBOL}\n"
