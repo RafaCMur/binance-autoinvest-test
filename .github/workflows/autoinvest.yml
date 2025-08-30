@@ -3,7 +3,17 @@ name: AutoInvest Testnet
 on:
   schedule:
     - cron: "0 9 * * *" # run daily at 09:00 UTC
+    - cron: "0 */2 * * *" # check order executions every 2 hours
   workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform'
+        required: false
+        default: 'buy_and_check'
+        type: choice
+        options:
+        - buy_and_check
+        - check_only
 
 jobs:
   run-autoinvest:
@@ -27,6 +37,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run buy_the_dip.py
+        if: github.event.schedule == '0 9 * * *' || github.event.inputs.action == 'buy_and_check' || github.event.inputs.action == ''
         env:
           BINANCE_API_KEY: ${{ secrets.BINANCE_API_KEY }}
           BINANCE_API_SECRET: ${{ secrets.BINANCE_API_SECRET }}
@@ -36,6 +47,17 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           USE_TESTNET: "false"
         run: python buy_the_dip.py
+
+      - name: Check order executions
+        env:
+          BINANCE_API_KEY: ${{ secrets.BINANCE_API_KEY }}
+          BINANCE_API_SECRET: ${{ secrets.BINANCE_API_SECRET }}
+          BINANCE_API_KEY_TEST: ${{ secrets.BINANCE_API_KEY_TEST }}
+          BINANCE_API_SECRET_TEST: ${{ secrets.BINANCE_API_SECRET_TEST }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          USE_TESTNET: "false"
+        run: python check_order_execution.py
 
       - name: Commit history to data-history branch
         run: |
