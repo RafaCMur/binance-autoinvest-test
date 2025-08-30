@@ -8,7 +8,7 @@ load_dotenv()
 
 # Environment Configuration
 USE_TESTNET = os.getenv("USE_TESTNET", "true").lower() == "true"
-BASE_URL = "https://testnet.binance.vision" if USE_TESTNET else None
+BASE_URL = "https://testnet.binance.vision" if USE_TESTNET else "https://api.binance.com"
 
 # API Configuration
 if USE_TESTNET:
