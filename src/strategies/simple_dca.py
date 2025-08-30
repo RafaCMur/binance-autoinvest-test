@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 import os
 from decimal import Decimal, ROUND_DOWN, getcontext
 from datetime import datetime, timezone
-from logger_csv import log_trade
+from src.utils.logger import log_trade
 
 load_dotenv()
 getcontext().prec = 28

@@ -36,7 +36,7 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           USE_TESTNET: "false"
-        run: python buy_the_dip.py
+        run: python src/strategies/buy_the_dip.py
 
       - name: Check order executions after buy
         env:
@@ -45,7 +45,7 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           USE_TESTNET: "false"
-        run: python check_order_execution.py
+        run: python src/monitoring/check_orders.py
 
       - name: Commit history to data-history branch
         run: |

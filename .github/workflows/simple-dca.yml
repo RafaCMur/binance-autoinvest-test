@@ -36,7 +36,7 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           USE_TESTNET: "false"
-        run: python buy_min_test.py
+        run: python src/strategies/simple_dca.py
 
       - name: Commit history to data-history branch
         run: |

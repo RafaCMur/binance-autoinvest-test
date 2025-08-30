@@ -33,4 +33,4 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           USE_TESTNET: "false"
-        run: python check_order_execution.py
+        run: python src/monitoring/check_orders.py
