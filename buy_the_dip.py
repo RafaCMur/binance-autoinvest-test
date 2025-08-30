@@ -8,18 +8,25 @@ from logger_csv import log_trade
 load_dotenv()
 getcontext().prec = 28
 
-USE_TESTNET = os.getenv("USE_TESTNET", "true").lower() == "true"
+USE_TESTNET = os.getenv("USE_TESTNET", "false").lower() == "true"
 BASE_URL = "https://testnet.binance.vision" if USE_TESTNET else None
 
-API_KEY = os.getenv("BINANCE_API_KEY_TEST")
-API_SECRET = os.getenv("BINANCE_API_SECRET_TEST")
+# Use mainnet keys by default, fallback to test keys if specified
+if USE_TESTNET:
+    API_KEY = os.getenv("BINANCE_API_KEY_TEST")
+    API_SECRET = os.getenv("BINANCE_API_SECRET_TEST")
+else:
+    API_KEY = os.getenv("BINANCE_API_KEY")
+    API_SECRET = os.getenv("BINANCE_API_SECRET")
 
 client = Spot(api_key=API_KEY, api_secret=API_SECRET, base_url=BASE_URL)
 
 # ===== Config =====
-SYMBOL = "BTCUSDT"          # in mainnet you can switch to BTCEUR
-BASELINE_AMOUNT = Decimal("10.00")  # baseline buy amount
+SYMBOL = "BTCEUR" if not USE_TESTNET else "BTCUSDT"
+BASE_CURRENCY = "EUR" if not USE_TESTNET else "USDT"
+BASELINE_AMOUNT = Decimal("10.00")  # baseline buy amount in base currency
 DIP_PERCENT = Decimal("0.02")       # -2% dip level
+MAX_DAILY_SPEND = Decimal("50.00")  # safety limit for real money
 
 # ===== Utils =====
 def get_balance(asset: str) -> Decimal:
@@ -55,10 +62,17 @@ print("\n========== START EXECUTION ==========")
 print("Datetime (UTC):", datetime.now(timezone.utc).isoformat())
 print("=====================================")
 
-usdt_before = get_balance("USDT")
+base_before = get_balance(BASE_CURRENCY)
 btc_before = get_balance("BTC")
-print(f"Initial USDT balance : {usdt_before}")
+print(f"Initial {BASE_CURRENCY} balance : {base_before}")
 print(f"Initial BTC balance  : {btc_before}")
+
+# Safety check for real money
+if not USE_TESTNET:
+    if base_before < BASELINE_AMOUNT * 2:
+        raise Exception(f"Insufficient {BASE_CURRENCY} balance. Need at least {BASELINE_AMOUNT * 2} for safety")
+    if BASELINE_AMOUNT > MAX_DAILY_SPEND:
+        raise Exception(f"Baseline amount {BASELINE_AMOUNT} exceeds daily limit {MAX_DAILY_SPEND}")
 print("-------------------------------------")
 
 # Cancel old limit orders
@@ -66,10 +80,10 @@ cancel_old_orders()
 
 # Current price
 price_now = Decimal(client.ticker_price(SYMBOL)["price"])
-print(f"Current {SYMBOL} price: {price_now} USDT\n")
+print(f"Current {SYMBOL} price: {price_now} {BASE_CURRENCY}\n")
 
 # 1) Baseline market buy
-print(f"Executing BASELINE market buy of {BASELINE_AMOUNT} USDT...")
+print(f"Executing BASELINE market buy of {BASELINE_AMOUNT} {BASE_CURRENCY}...")
 base_order = client.new_order(
     symbol=SYMBOL,
     side="BUY",
@@ -85,13 +99,13 @@ for f in base_order.get("fills", []):
     price = Decimal(f['price'])
     fee = Decimal(f['commission'])
     btc_bought += qty
-    cost_usdt += qty * price
+    cost_usdt += qty * price  # cost in base currency
     commission += fee
     print(f"   Fill: {qty} BTC @ {price} (fee {fee} {f['commissionAsset']})")
 
 if btc_bought > 0:
     avg_price = cost_usdt / btc_bought
-    print(f"BASELINE -> Bought {btc_bought} BTC for {cost_usdt:.2f} USDT (avg price {avg_price:.2f})")
+    print(f"BASELINE -> Bought {btc_bought} BTC for {cost_usdt:.2f} {BASE_CURRENCY} (avg price {avg_price:.2f})")
     if commission > 0:
         print(f"   Total commission: {commission} BTC")
 print("-------------------------------------")
@@ -106,8 +120,8 @@ dip_qty = (BASELINE_AMOUNT / dip_price)
 dip_qty = floor_step(dip_qty, filters["stepSize"])  # adjust to step size
 
 print("Placing DIP order:")
-print(f"   Amount USDT : {BASELINE_AMOUNT}")
-print(f"   Target price: {dip_price} USDT ({(DIP_PERCENT*100):.2f}% below current)")
+print(f"   Amount {BASE_CURRENCY} : {BASELINE_AMOUNT}")
+print(f"   Target price: {dip_price} {BASE_CURRENCY} ({(DIP_PERCENT*100):.2f}% below current)")
 print(f"   Quantity BTC: {dip_qty}")
 
 dip_order = client.new_order(
@@ -123,14 +137,14 @@ print("-------------------------------------")
 
 
 # --- Final state ---
-usdt_after = get_balance("USDT")
+base_after = get_balance(BASE_CURRENCY)
 btc_after = get_balance("BTC")
 
-usdt_diff = usdt_after - usdt_before
+base_diff = base_after - base_before
 btc_diff = btc_after - btc_before
 
 print("========== FINAL SUMMARY ==========")
-print(f"Final USDT balance : {usdt_after} ({usdt_diff:+f})")
+print(f"Final {BASE_CURRENCY} balance : {base_after} ({base_diff:+f})")
 print(f"Final BTC balance  : {btc_after} ({btc_diff:+f})")
 print("===================================\n")
 
@@ -144,10 +158,11 @@ log_trade(
     fee=commission,
     dip_price=dip_price,
     dip_qty=dip_qty,
-    usdt_before=usdt_before,
-    usdt_after=usdt_after,
+    base_before=base_before,
+    base_after=base_after,
     btc_before=btc_before,
-    btc_after=btc_after
+    btc_after=btc_after,
+    base_currency=BASE_CURRENCY
 )
 print("Trade logged to history.csv")
 
@@ -156,12 +171,12 @@ print("Trade logged to history.csv")
 from telegram_notify import send_telegram
 
 summary = (
-    "Buy-the-dip executed\n\n"
+    f"Buy-the-dip executed {'(TESTNET)' if USE_TESTNET else '(MAINNET)'}\n\n"
     f"Symbol: {SYMBOL}\n"
-    f"Baseline: {BASELINE_AMOUNT} quote\n"
+    f"Baseline: {BASELINE_AMOUNT} {BASE_CURRENCY}\n"
     f"Dip target: {dip_price}\n"
     f"BTC bought: {btc_bought}\n"
-    f"USDT: {usdt_before} -> {usdt_after}\n"
+    f"{BASE_CURRENCY}: {base_before} -> {base_after}\n"
     f"BTC:  {btc_before} -> {btc_after}\n"
 )
 
