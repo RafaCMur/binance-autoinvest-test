@@ -24,11 +24,11 @@ BASE_CURRENCY = "USDT" if USE_TESTNET else "EUR"
 TARGET_CURRENCY = "BTC"
 
 # Simple DCA Settings
-SIMPLE_DCA_AMOUNT = 25.0  # USDT for testnet, EUR for mainnet
-MIN_BALANCE_REQUIRED = 25.0  # USDT for testnet, EUR for mainnet
+SIMPLE_DCA_AMOUNT = 62.0  # USDT for testnet, EUR for mainnet
+MIN_BALANCE_REQUIRED = 62.0  # USDT for testnet, EUR for mainnet
 
 # Buy The Dip Settings
-BASELINE_AMOUNT = 10.0  # USDT for testnet, EUR for mainnet
+BASELINE_AMOUNT = 0.0  # USDT for testnet, EUR for mainnet
 MIN_DIP_PERCENT = 0.02  # minimum -2% dip level
 MAX_DIP_PERCENT = 0.15  # maximum -15% dip level
 DIP_INCREMENT = 0.01    # 1% increment between dip levels
